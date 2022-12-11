@@ -136,15 +136,49 @@ void Rect::changeHeight(double delta) {
     setSize({size.width, size.height + delta});
 }
 
-// TODO: Implement this method
 bool Rect::isOverlapping(const Rect &r) const {
     // There are only two cases when rectangles are *not* overlapping:
     // 1. when one is to the left of the other
+    //find out which one is on the left
+    if (this->getCenterX() > r.getCenterX()) {
+        //evaluate the edge positions
+        if (this->getCenterX() - (this->getWidth()/2) > r.getCenterX() + (r.getWidth()/2)) {
+            return false;
+        }
+    }
+    //same as above but switched for when r is on the right.
+    if (this->getCenterX() < r.getCenterX()) {
+        if (this->getCenterX() + (this->getWidth()/2) < r.getCenterX() - (r.getWidth()/2)) {
+            return false;
+        }
+    }
     // 2. when one is above the other
-    return false; // placeholder value for compilation
+    //find out which one is on top
+    if (this->getCenterY() > r.getCenterY()) {
+        //evaluate the edge positions
+        if (this->getCenterY() - (this->getHeight()/2) > r.getCenterY() + (r.getHeight()/2)) {
+            return false;
+        }
+    }
+    //same as above but switched for when r is on top.
+    if (this->getCenterY() < r.getCenterY()) {
+        //evaluate the edge positions
+        if (this->getCenterY() + (this->getHeight()/2) < r.getCenterY() - (r.getHeight()/2)) {
+            return false;
+        }
+    }
+    //if you've made it this far, you're overlapping!
+    return true;
 }
 
-// TODO: Implement this method
 void Rect::draw() const {
-    // Don't forget to set the color to the fill field
+    //Set the color to the fill field
+    glColor3f(fill.red, fill.green, fill.blue);
+    glBegin(GL_QUADS);
+    //Draw vertices
+    glVertex2i(center.x - (this->getWidth()/2), center.y - (this->getHeight()/2));
+    glVertex2i(center.x - (this->getWidth()/2), center.y + (this->getHeight()/2));
+    glVertex2i(center.x + (this->getWidth()/2), center.y + (this->getHeight()/2));
+    glVertex2i(center.x + (this->getWidth()/2), center.y - (this->getHeight()/2));
+    glEnd();
 }
