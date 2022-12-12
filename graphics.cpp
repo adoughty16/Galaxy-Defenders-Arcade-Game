@@ -161,8 +161,8 @@ void display() {
         for (const char &letter: "OH NO! THE ALIENS HAVE BREACHED THE MAIN BASE") {
             glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, letter);
         }
-        glRasterPos2i(300, 260);
-        for (const char &letter: "DAMAGE LEVEL: CATASTROPHIC!") {
+        glRasterPos2i(280, 260);
+        for (const char &letter: "DAMAGE ASSESSMENT: CATASTROPHIC!") {
             glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, letter);
         }
         glRasterPos2i(400, 290);
