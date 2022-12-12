@@ -25,17 +25,20 @@ double elapsed;
 
 
 Status gameStatus = MENU;
-vector<Rect> bullets;
+vector<Rect> bullets, cavBullets;
 vector<Baddie> baddies;
+vector<Ship> theCavalry;
 Ship player = Ship(silver, orange, point2D(500,600));
 
+int cavalryCharges = 2;
 int playerLives = 5;
 int countdown = 5;
 int level = 0;
 
-string readyMessage = "Get Ready! " + to_string(countdown);
+string readyMessage = "Get Ready! 5";
 string scoreboard = "Remaining Lives: 5";
-string levelMessage = "Level: " + to_string(level);
+string levelMessage = "Level: 0";
+string backupMessage = "Cavalry Charges: 2";
 string scoreMessage;
 
 void init() {
@@ -133,8 +136,14 @@ void display() {
         for (Rect i: bullets) {
             i.draw();
         }
-        for (Baddie j: baddies) {
+        for (Rect j: cavBullets) {
             j.draw();
+        }
+        for (Baddie k: baddies) {
+            k.draw();
+        }
+        for (Ship l: theCavalry) {
+            l.draw();
         }
         glColor3f(1, 1, 1);
         glRasterPos2i(800, 60);
@@ -142,6 +151,10 @@ void display() {
             glutBitmapCharacter(GLUT_BITMAP_8_BY_13, letter);
         }
         glRasterPos2i(800, 70);
+        for (const char &letter: backupMessage) {
+            glutBitmapCharacter(GLUT_BITMAP_8_BY_13, letter);
+        }
+        glRasterPos2i(800, 80);
         for (const char &letter: levelMessage) {
             glutBitmapCharacter(GLUT_BITMAP_8_BY_13, letter);
         }
@@ -213,6 +226,25 @@ void kbd(unsigned char key, int x, int y) {
     if(key == 'f') {
         bullets.push_back(Rect(brickRed,player.getGunCenter1().x, player.getGunCenter1().y - 10,dimensions(5,10)));
         bullets.push_back(Rect(brickRed,player.getGunCenter2().x, player.getGunCenter2().y - 10,dimensions(5,10)));
+    }
+
+    if(key == 'c' && cavalryCharges > 0) {
+        if (player.getCenter().x < 500) {
+            for (int i = 0; i < 5; ++i) {
+                theCavalry.push_back(Ship(color(rand() % 10 / 10.0, rand() % 10 / 10.0, rand() % 10 / 10.0),
+                                          color(rand() % 10 / 10.0, rand() % 10 / 10.0, rand() % 10 / 10.0),
+                                          point2D(550 + i*100,730)));
+            }
+        }
+        if (player.getCenter().x >= 500) {
+            for (int i = 0; i < 5; ++i) {
+                theCavalry.push_back(Ship(color(rand() % 10 / 10.0, rand() % 10 / 10.0, rand() % 10 / 10.0),
+                                          color(rand() % 10 / 10.0, rand() % 10 / 10.0, rand() % 10 / 10.0),
+                                          point2D(50 + i*100,730)));
+            }
+        }
+        --cavalryCharges;
+        backupMessage = "Cavalry Charges: " + to_string(cavalryCharges);
     }
 
     if (key == 27) {
@@ -299,14 +331,48 @@ void bulletTimer(int dummy) {
         for (int i = 0; i < bullets.size(); ++i) {
             if (bullets[i].getCenterY() > 0) {
                 bullets[i].setCenter(bullets[i].getCenterX(), bullets[i].getCenterY() - 10);
-            } else
+            }
+            else {
                 bullets.erase(bullets.begin() + i);
+                --i;
+            }
         }
 
         for (int i = 0; i < bullets.size(); ++i) {
             for (int j = 0; j < baddies.size(); ++j) {
                 if (baddies[j].isOverlapping(point2D(bullets[i].getCenterX(), bullets[i].getCenterY() - 5))) {
                     bullets.erase(bullets.begin() + i);
+                    baddies.erase(baddies.begin() + j);
+                }
+            }
+        }
+        for (int i = 0; i < cavBullets.size(); ++i) {
+            if (cavBullets[i].getCenterY() > 0) {
+                cavBullets[i].setCenter(cavBullets[i].getCenterX(), cavBullets[i].getCenterY() - 14);
+            } else {
+                cavBullets.erase(cavBullets.begin() + i);
+                --i;
+            }
+
+        }
+
+        for (int i = 0; i < cavBullets.size(); ++i) {
+
+            for (int j = 0; j < baddies.size(); ++j) {
+                if (baddies[j].isOverlapping(point2D(cavBullets[i].getCenterX(), cavBullets[i].getCenterY() - 5))) {
+                    cavBullets.erase(cavBullets.begin() + i);
+                    baddies.erase(baddies.begin() + j);
+                }
+            }
+        }
+        for (int i = 0; i < theCavalry.size(); ++i) {
+            if (theCavalry[i].getCenter().y > -30) {
+                theCavalry[i].move(0, -8);
+            } else
+                theCavalry.erase(theCavalry.begin() + i);
+            for (int j = 0; j < baddies.size(); ++j) {
+                if (baddies[j].isOverlapping(point2D(theCavalry[i].getCenter().x, theCavalry[i].getCenter().y - 5))) {
+                    theCavalry.erase(theCavalry.begin() + i);
                     baddies.erase(baddies.begin() + j);
                 }
             }
@@ -322,7 +388,7 @@ void baddieTimer(int dummy2) {
     if (gameStatus == PLAY) {
         baddies.push_back(Baddie(color(rand() % 10 / 10.0, rand() % 10 / 10.0, rand() % 10 / 10.0),
                                  color(rand() % 10 / 10.0, rand() % 10 / 10.0, rand() % 10 / 10.0),
-                                 point2D(rand() % 1000, 40), rand() % 16 + 14));
+                                 point2D(rand() % 940 + 30, 40), rand() % 15 + 15));
     }
 
     glutPostRedisplay();
@@ -380,6 +446,16 @@ void readyTimer(int dummy5) {
     glutTimerFunc(1000, readyTimer, dummy5);
 }
 
+void cavBulletTimer(int dummy6) {
+
+    for (int i = 0; i < theCavalry.size(); ++i) {
+        cavBullets.push_back(Rect(brickRed,theCavalry[i].getGunCenter1().x, theCavalry[i].getGunCenter1().y - 10,dimensions(5,10)));
+        cavBullets.push_back(Rect(brickRed,theCavalry[i].getGunCenter2().x, theCavalry[i].getGunCenter2().y - 10,dimensions(5,10)));
+    }
+    glutPostRedisplay();
+    glutTimerFunc(400, cavBulletTimer, dummy6);
+}
+
 /* Main function: GLUT runs as a console application starting at main()  */
 int main(int argc, char** argv) {
     
@@ -418,6 +494,7 @@ int main(int argc, char** argv) {
     glutTimerFunc(0, baddieTimer, 0);
     glutTimerFunc(0, baddieMoveTimer, 0);
     glutTimerFunc(0,readyTimer, 0);
+    glutTimerFunc(0,cavBulletTimer,0);
 
 
     // Enter the event-processing loop
