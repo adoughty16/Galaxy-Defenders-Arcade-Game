@@ -4,6 +4,7 @@
 #include "ship.h"
 #include "baddie.h"
 #include "baddie.cpp"
+#include <ctime>
 #include <iostream>
 #include <memory>
 #include <vector>
@@ -18,6 +19,11 @@ const color orange(1, 163/255.0, 22/255.0);
 
 enum Status{MENU, PLAY, GETREADY, HIGHSCORES, GAMEOVER};
 
+bool clockStarted = false;
+clock_t beginTime, endTime;
+double elapsed;
+
+
 Status gameStatus = MENU;
 vector<Rect> bullets;
 vector<Baddie> baddies;
@@ -25,8 +31,12 @@ Ship player = Ship(silver, orange, point2D(500,600));
 
 int playerLives = 5;
 int countdown = 5;
+int level = 0;
+
 string readyMessage = "Get Ready! " + to_string(countdown);
 string scoreboard = "Remaining Lives: 5";
+string levelMessage = "Level: " + to_string(level);
+string scoreMessage;
 
 void init() {
     width = 1000;
@@ -98,6 +108,14 @@ void display() {
     }
     if (gameStatus == GETREADY) {
         glColor3f(1, 0, 1);
+        glRasterPos2i(200, 100);
+        for (const char &letter: "Captain! A fleet of alien ships has been spotted on the radar!") {
+            glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, letter);
+        }
+        glRasterPos2i(300, 150);
+        for (const char &letter: "... We need you to defend the system!") {
+            glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, letter);
+        }
         glRasterPos2i(400, 300);
         for (const char &letter: readyMessage) {
             glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, letter);
@@ -105,6 +123,11 @@ void display() {
     }
 
     if (gameStatus == PLAY) {
+        if(clockStarted == false) {
+            beginTime = clock();
+            clockStarted = true;
+        }
+
         player.draw();
 
         for (Rect i: bullets) {
@@ -115,10 +138,69 @@ void display() {
         }
         glColor3f(1, 1, 1);
         glRasterPos2i(800, 60);
-        string scoreboard = "Remaining Lives: " + to_string(playerLives);
         for (const char &letter: scoreboard) {
             glutBitmapCharacter(GLUT_BITMAP_8_BY_13, letter);
         }
+        glRasterPos2i(800, 70);
+        for (const char &letter: levelMessage) {
+            glutBitmapCharacter(GLUT_BITMAP_8_BY_13, letter);
+        }
+
+        if (playerLives == 0) {
+            endTime = clock();
+            elapsed = double(endTime - beginTime) * 10 / CLOCKS_PER_SEC;
+            scoreMessage = "You survived: " + to_string(elapsed) + " seconds.";
+            gameStatus = GAMEOVER;
+        }
+    }
+
+    if (gameStatus == GAMEOVER) {
+
+        glColor3f(1, 0, 1);
+        glRasterPos2i(150, 230);
+        for (const char &letter: "OH NO! THE ALIENS HAVE BREACHED THE MAIN BASE") {
+            glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, letter);
+        }
+        glRasterPos2i(300, 260);
+        for (const char &letter: "DAMAGE LEVEL: CATASTROPHIC!") {
+            glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, letter);
+        }
+        glRasterPos2i(400, 290);
+        for (const char &letter: "GAME OVER...") {
+            glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, letter);
+        }
+        glRasterPos2i(350, 320);
+        for (const char &letter: scoreMessage) {
+            glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, letter);
+        }
+
+        glColor3f(0.5, 1, 0.5);
+        glBegin(GL_QUADS);
+        glVertex2i(400, 370);
+        glVertex2i(570, 370);
+        glVertex2i(570, 420);
+        glVertex2i(400, 420);
+        glEnd();
+
+        glColor3f(1, 0.5, 1);
+        glBegin(GL_QUADS);
+        glVertex2i(400, 440);
+        glVertex2i(570, 440);
+        glVertex2i(570, 490);
+        glVertex2i(400, 490);
+        glEnd();
+
+        glColor3f(0, 0, 0);
+        glRasterPos2i(405, 400);
+        for (const char &letter: "PLAY AGAIN") {
+            glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, letter);
+        }
+        glColor3f(0, 0, 0);
+        glRasterPos2i(405, 470);
+        for (const char &letter: "MAIN MENU") {
+            glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, letter);
+        }
+
     }
 
     
@@ -149,10 +231,14 @@ void kbdS(int key, int x, int y) {
             }
             break;
         case GLUT_KEY_LEFT:
-            player.move(-30,0);
+            if (player.getGunCenter2().x > 0) {
+                player.move(-30, 0);
+            }
             break;
         case GLUT_KEY_RIGHT:
-            player.move(30,0);
+            if (player.getGunCenter1().x < 1000) {
+                player.move(30, 0);
+            }
             break;
         case GLUT_KEY_UP:
             if (player.getCenter().y > 550) {
@@ -172,11 +258,36 @@ void cursor(int x, int y) {
 // state will be GLUT_UP or GLUT_DOWN
 void mouse(int button, int state, int x, int y) {
 
-    if (gameStatus == MENU && 400 < x < 570 && 250 < y < 300 && button == GLUT_LEFT_BUTTON && state == GLUT_UP) {
+    if (gameStatus == MENU && 400 < x && x < 570 && 250 < y && y < 300 && button == GLUT_LEFT_BUTTON && state == GLUT_UP) {
+        clockStarted = false;
+        playerLives = 5;
+        level = 0;
+        countdown = 5;
+        string readyMessage = "Get Ready! " + to_string(countdown);
+        string scoreboard = "Remaining Lives: " + to_string(playerLives);
+        string levelMessage = "Level: " + to_string(level);
+        baddies.clear();
+        bullets.clear();
         gameStatus = GETREADY;
     }
-    if (gameStatus == MENU && 400 < x < 570 && 320 < y < 370 && button == GLUT_LEFT_BUTTON && state == GLUT_UP) {
+    if (gameStatus == MENU && 400 < x && x < 570 && 320 < y && y < 370 && button == GLUT_LEFT_BUTTON && state == GLUT_UP) {
         gameStatus = HIGHSCORES;
+    }
+    if (gameStatus == GAMEOVER && 400 < x && x < 570 && 370 < y && y < 420 && button == GLUT_LEFT_BUTTON && state == GLUT_UP) {
+        clockStarted = false;
+        playerLives = 5;
+        level = 0;
+        countdown = 5;
+        string readyMessage = "Get Ready! " + to_string(countdown);
+        string scoreboard = "Remaining Lives: " + to_string(playerLives);
+        string levelMessage = "Level: " + to_string(level);
+
+        baddies.clear();
+        bullets.clear();
+        gameStatus = GETREADY;
+    }
+    if (gameStatus == GAMEOVER && 400 < x && x < 570 && 440 < y && y < 490 && button == GLUT_LEFT_BUTTON && state == GLUT_UP) {
+        gameStatus = MENU;
     }
 
     glutPostRedisplay();
@@ -211,7 +322,7 @@ void baddieTimer(int dummy2) {
     if (gameStatus == PLAY) {
         baddies.push_back(Baddie(color(rand() % 10 / 10.0, rand() % 10 / 10.0, rand() % 10 / 10.0),
                                  color(rand() % 10 / 10.0, rand() % 10 / 10.0, rand() % 10 / 10.0),
-                                 point2D(rand() % 1000, 40), rand() % 20 + 10));
+                                 point2D(rand() % 1000, 40), rand() % 16 + 14));
     }
 
     glutPostRedisplay();
@@ -222,7 +333,7 @@ void baddieMoveTimer(int dummy3) {
     if (gameStatus == PLAY) {
         for (int i = 0; i < baddies.size(); ++i) {
             if (baddies[i].getBody().getBottomY() < 700) {
-                baddies[i].move(0, 3);
+                baddies[i].move(0, 2 + level);
             } else {
                 baddies.erase(baddies.begin() + i);
                 --playerLives;
@@ -242,7 +353,16 @@ void baddieMoveTimer(int dummy3) {
     glutTimerFunc(50, baddieMoveTimer, dummy3);
 }
 
-void readyTimer(int dummy4) {
+void levelTimer(int dummy4) {
+    if (gameStatus == PLAY) {
+        ++level;
+        levelMessage = "Level: " + to_string(level);
+    }
+    glutPostRedisplay();
+    glutTimerFunc(20000, levelTimer, dummy4);
+}
+
+void readyTimer(int dummy5) {
 
     if (gameStatus == GETREADY && countdown > 0) {
         --countdown;
@@ -250,13 +370,14 @@ void readyTimer(int dummy4) {
     }
     else if (gameStatus == GETREADY && countdown == 0) {
         gameStatus = PLAY;
+        glutTimerFunc(0,levelTimer,0);
     }
     else
         countdown = 5;
 
 
     glutPostRedisplay();
-    glutTimerFunc(1000, readyTimer, dummy4);
+    glutTimerFunc(1000, readyTimer, dummy5);
 }
 
 /* Main function: GLUT runs as a console application starting at main()  */
@@ -297,7 +418,6 @@ int main(int argc, char** argv) {
     glutTimerFunc(0, baddieTimer, 0);
     glutTimerFunc(0, baddieMoveTimer, 0);
     glutTimerFunc(0,readyTimer, 0);
-
 
 
     // Enter the event-processing loop
