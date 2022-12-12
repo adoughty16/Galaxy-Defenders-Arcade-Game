@@ -30,7 +30,7 @@ vector<Baddie> baddies;
 vector<Ship> theCavalry;
 Ship player = Ship(silver, orange, point2D(500,600));
 
-int cavalryCharges = 2;
+int cavalryCharges = 1;
 int playerLives = 5;
 int countdown = 5;
 int level = 0;
@@ -348,7 +348,12 @@ void bulletTimer(int dummy) {
         }
         for (int i = 0; i < cavBullets.size(); ++i) {
             if (cavBullets[i].getCenterY() > 0) {
-                cavBullets[i].setCenter(cavBullets[i].getCenterX(), cavBullets[i].getCenterY() - 14);
+                if (int(cavBullets[i].getCenterX()) % 2 == 0 ) {
+                    cavBullets[i].setCenter(cavBullets[i].getCenterX() -2, cavBullets[i].getCenterY() - 14);
+                }
+                else {
+                    cavBullets[i].setCenter(cavBullets[i].getCenterX() +2, cavBullets[i].getCenterY() - 14);
+                }
             } else {
                 cavBullets.erase(cavBullets.begin() + i);
                 --i;
@@ -422,6 +427,8 @@ void baddieMoveTimer(int dummy3) {
 void levelTimer(int dummy4) {
     if (gameStatus == PLAY) {
         ++level;
+        ++cavalryCharges;
+        backupMessage = "Cavalry Charges: " + to_string(cavalryCharges);
         levelMessage = "Level: " + to_string(level);
     }
     glutPostRedisplay();
@@ -449,7 +456,7 @@ void readyTimer(int dummy5) {
 void cavBulletTimer(int dummy6) {
 
     for (int i = 0; i < theCavalry.size(); ++i) {
-        cavBullets.push_back(Rect(brickRed,theCavalry[i].getGunCenter1().x, theCavalry[i].getGunCenter1().y - 10,dimensions(5,10)));
+        cavBullets.push_back(Rect(brickRed,theCavalry[i].getGunCenter1().x - 1, theCavalry[i].getGunCenter1().y - 10,dimensions(5,10)));
         cavBullets.push_back(Rect(brickRed,theCavalry[i].getGunCenter2().x, theCavalry[i].getGunCenter2().y - 10,dimensions(5,10)));
     }
     glutPostRedisplay();
