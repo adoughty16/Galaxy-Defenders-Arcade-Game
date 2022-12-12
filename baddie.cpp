@@ -42,7 +42,7 @@ void Baddie::move(int deltaX, int deltaY) {
     gun2.setCenter(gun2.getCenterX() + deltaX, gun2.getCenterY() + deltaY);
 }
 void Baddie::draw() {
-    body.draw();
     gun1.draw();
     gun2.draw();
+    body.draw();
 }

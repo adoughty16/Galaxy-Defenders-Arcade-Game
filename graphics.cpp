@@ -16,7 +16,7 @@ const color brickRed(201/255.0, 20/255.0, 20/255.0);
 const color black(0, 0, 0);
 const color orange(1, 163/255.0, 22/255.0);
 
-enum Status{MENU, PLAY, GAMEOVER};
+enum Status{MENU, PLAY, GETREADY, HIGHSCORES, GAMEOVER};
 
 Status gameStatus = MENU;
 vector<Rect> bullets;
@@ -24,6 +24,8 @@ vector<Baddie> baddies;
 Ship player = Ship(silver, orange, point2D(500,600));
 
 int playerLives = 5;
+int countdown = 5;
+string readyMessage = "Get Ready! " + to_string(countdown);
 string scoreboard = "Remaining Lives: 5";
 
 void init() {
@@ -59,11 +61,46 @@ void display() {
      * Draw here
      */
     if (gameStatus == MENU) {
-        glColor3f(1, 1, 1);
-        glRasterPos2i(800, 60);
-        string scoreboard = "Remaining Lives: " + to_string(playerLives);
-        for (const char &letter: scoreboard) {
-            glutBitmapCharacter(GLUT_BITMAP_8_BY_13, letter);
+        glColor3f(1, 0, 1);
+        glRasterPos2i(400, 230);
+        for (const char &letter: "Ship Shootin'!") {
+            glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, letter);
+        }
+        glColor3f(1, 1, 0);
+        glBegin(GL_QUADS);
+        glVertex2i(400, 250);
+        glVertex2i(570, 250);
+        glVertex2i(570, 300);
+        glVertex2i(400, 300);
+        glEnd();
+
+        glColor3f(0, 1, 1);
+        glBegin(GL_QUADS);
+        glVertex2i(400, 320);
+        glVertex2i(570, 320);
+        glVertex2i(570, 370);
+        glVertex2i(400, 370);
+        glEnd();
+
+        glColor3f(0, 0, 0);
+        glRasterPos2i(450, 285);
+        for (const char &letter: "PLAY") {
+            glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, letter);
+        }
+
+        glColor3f(0, 0, 0);
+        glRasterPos2i(400, 355);
+        for (const char &letter: "HIGH SCORES") {
+            glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, letter);
+        }
+
+
+    }
+    if (gameStatus == GETREADY) {
+        glColor3f(1, 0, 1);
+        glRasterPos2i(400, 300);
+        for (const char &letter: readyMessage) {
+            glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, letter);
         }
     }
 
@@ -135,24 +172,32 @@ void cursor(int x, int y) {
 // state will be GLUT_UP or GLUT_DOWN
 void mouse(int button, int state, int x, int y) {
 
+    if (gameStatus == MENU && 400 < x < 570 && 250 < y < 300 && button == GLUT_LEFT_BUTTON && state == GLUT_UP) {
+        gameStatus = GETREADY;
+    }
+    if (gameStatus == MENU && 400 < x < 570 && 320 < y < 370 && button == GLUT_LEFT_BUTTON && state == GLUT_UP) {
+        gameStatus = HIGHSCORES;
+    }
+
     glutPostRedisplay();
 }
 
 void bulletTimer(int dummy) {
+    if (gameStatus == PLAY) {
 
-    for (int i = 0; i < bullets.size(); ++i) {
-        if (bullets[i].getCenterY() > 0) {
-            bullets[i].setCenter(bullets[i].getCenterX(), bullets[i].getCenterY() - 10);
+        for (int i = 0; i < bullets.size(); ++i) {
+            if (bullets[i].getCenterY() > 0) {
+                bullets[i].setCenter(bullets[i].getCenterX(), bullets[i].getCenterY() - 10);
+            } else
+                bullets.erase(bullets.begin() + i);
         }
-        else
-            bullets.erase(bullets.begin() + i);
-    }
 
-    for(int i = 0; i < bullets.size(); ++i) {
-        for (int j = 0; j < baddies.size(); ++j) {
-            if (baddies[j].isOverlapping(point2D(bullets[i].getCenterX(), bullets[i].getCenterY() - 5))) {
-                bullets.erase(bullets.begin()+ i);
-                baddies.erase(baddies.begin() + j);
+        for (int i = 0; i < bullets.size(); ++i) {
+            for (int j = 0; j < baddies.size(); ++j) {
+                if (baddies[j].isOverlapping(point2D(bullets[i].getCenterX(), bullets[i].getCenterY() - 5))) {
+                    bullets.erase(bullets.begin() + i);
+                    baddies.erase(baddies.begin() + j);
+                }
             }
         }
     }
@@ -163,35 +208,55 @@ void bulletTimer(int dummy) {
 
 void baddieTimer(int dummy2) {
 
-    baddies.push_back(Baddie(color(rand()%10/10.0,rand()%10/10.0,rand()%10/10.0),
-                             color(rand()%10/10.0,rand()%10/10.0,rand()%10/10.0),
-                             point2D(rand() % 1000, 40), rand() % 20 + 10));
+    if (gameStatus == PLAY) {
+        baddies.push_back(Baddie(color(rand() % 10 / 10.0, rand() % 10 / 10.0, rand() % 10 / 10.0),
+                                 color(rand() % 10 / 10.0, rand() % 10 / 10.0, rand() % 10 / 10.0),
+                                 point2D(rand() % 1000, 40), rand() % 20 + 10));
+    }
 
     glutPostRedisplay();
     glutTimerFunc(1500, baddieTimer, dummy2);
 }
 
 void baddieMoveTimer(int dummy3) {
-    for (int i = 0; i < baddies.size(); ++i) {
-        if (baddies[i].getBody().getBottomY() < 700) {
-            baddies[i].move(0, 3);
-        }
-        else {
-            baddies.erase(baddies.begin() + i);
-            --playerLives;
-            scoreboard = "Remaining Lives: " + to_string(playerLives);
-        }
-        if (baddies[i].isOverlapping(point2D(player.getCenter().x, player.getCenter().y - 25)) ||
-            baddies[i].isOverlapping(point2D(player.getGunCenter1().x, player.getGunCenter1().y - 7)) ||
-            baddies[i].isOverlapping(point2D(player.getGunCenter2().x, player.getGunCenter2().y - 7))) {
-            baddies.erase(baddies.begin() + i);
-            --playerLives;
-            scoreboard = "Remaining Lives: " + to_string(playerLives);
-        }
+    if (gameStatus == PLAY) {
+        for (int i = 0; i < baddies.size(); ++i) {
+            if (baddies[i].getBody().getBottomY() < 700) {
+                baddies[i].move(0, 3);
+            } else {
+                baddies.erase(baddies.begin() + i);
+                --playerLives;
+                scoreboard = "Remaining Lives: " + to_string(playerLives);
+            }
+            if (baddies[i].isOverlapping(point2D(player.getCenter().x, player.getCenter().y - 25)) ||
+                baddies[i].isOverlapping(point2D(player.getGunCenter1().x, player.getGunCenter1().y - 7)) ||
+                baddies[i].isOverlapping(point2D(player.getGunCenter2().x, player.getGunCenter2().y - 7))) {
+                baddies.erase(baddies.begin() + i);
+                --playerLives;
+                scoreboard = "Remaining Lives: " + to_string(playerLives);
+            }
 
+        }
     }
     glutPostRedisplay();
     glutTimerFunc(50, baddieMoveTimer, dummy3);
+}
+
+void readyTimer(int dummy4) {
+
+    if (gameStatus == GETREADY && countdown > 0) {
+        --countdown;
+        readyMessage = "Get Ready! " + to_string(countdown);
+    }
+    else if (gameStatus == GETREADY && countdown == 0) {
+        gameStatus = PLAY;
+    }
+    else
+        countdown = 5;
+
+
+    glutPostRedisplay();
+    glutTimerFunc(1000, readyTimer, dummy4);
 }
 
 /* Main function: GLUT runs as a console application starting at main()  */
@@ -231,6 +296,7 @@ int main(int argc, char** argv) {
     glutTimerFunc(0, bulletTimer, 0);
     glutTimerFunc(0, baddieTimer, 0);
     glutTimerFunc(0, baddieMoveTimer, 0);
+    glutTimerFunc(0,readyTimer, 0);
 
 
 
