@@ -4,6 +4,8 @@
 #include <math.h> // This allows you to use sqrt and pow functions
 #include <string>
 
+//THIS CODE COMES FROM CLASS
+
 const double PI = 3.14159265358979323846;
 
 struct color {

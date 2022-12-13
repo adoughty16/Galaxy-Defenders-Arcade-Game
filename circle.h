@@ -3,6 +3,8 @@
 
 #include "shape.h"
 
+//THIS CODE COMES FROM CLASS
+
 class Circle : public Shape {
 private:
     double radius;

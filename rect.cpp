@@ -3,6 +3,8 @@
 #include <iostream>
 using namespace std;
 
+//THIS CODE COMES FROM CLASS. I ONLY WROTE THE OVERLAP AND DRAW FUNCTIONS
+
 /********************* Dimensions Struct ********************/
 
 dimensions::dimensions() : width(0), height(0) {}

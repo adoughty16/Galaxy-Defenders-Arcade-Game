@@ -48,11 +48,11 @@ color Ship::getBodyFill() {
     return bodyFill;
 }
 
-
 void Ship::setCenter(point2D center){
     this->center = center;
 
     body.setCenter(center);
+    //need to reposition guns as well
     gun1.setCenter(center.x-10, center.y-5);
     gun2.setCenter(center.x+10, center.y-5);
 }
@@ -67,6 +67,7 @@ void Ship::setBodyFill(color bodyColor) {
 }
 
 void Ship::move(int deltaX, int deltaY) {
+    //move body and guns by delta x and y
     center = point2D(center.x + deltaX, center.y + deltaY);
     body.setCenter(center);
     gun1.setCenter(gun1.getCenterX() + deltaX, gun1.getCenterY() + deltaY);
@@ -74,18 +75,17 @@ void Ship::move(int deltaX, int deltaY) {
 }
 
 void Ship::draw() {
-
+    //call component draw functions
     gun1.draw();
     gun2.draw();
     body.draw();
-
+    //draw triangles for the nose of the ship and the wings
     glColor3f(bodyFill.red, bodyFill.green, bodyFill.blue);
     glBegin(GL_TRIANGLES);
     glVertex2i(center.x, center.y);
     glVertex2i(center.x + 28, center.y + (body.getHeight()/2));
     glVertex2i(center.x - 28, center.y + (body.getHeight()/2));
     glEnd();
-
     glBegin(GL_TRIANGLES);
     glVertex2i(center.x, center.y - 25);
     glVertex2i(center.x - body.getWidth()/2, center.y - (body.getHeight()/2));

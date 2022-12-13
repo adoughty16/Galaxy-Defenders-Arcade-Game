@@ -3,6 +3,8 @@
 
 #include "shape.h"
 
+//THIS CODE COMES (MOSTLY) FROM CLASS. I WROTE THE DRAW AND OVERLAP FUNCTIONS
+
 struct dimensions {
     double width;
     double height;
