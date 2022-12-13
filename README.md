@@ -4,7 +4,7 @@
 This is a spaceship shooter game in the style of 80's arcade games.
 You are the captain of a starship tasked with defending a space station on
 the edge of explored space. Who's out there with you? Aliens. That's who.
-And they want to destroy the space station.
+And they want to blow up your spot.
 
 Use your ship's laser cannons and fight your way through waves of enemy alien ships.
 If you need backup, call for aid from starbase!
