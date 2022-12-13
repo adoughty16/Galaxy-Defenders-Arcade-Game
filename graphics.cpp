@@ -168,7 +168,7 @@ void display() {
         //draw the intro, menu options, and rules
         glColor3f(1, 0, 1);
         glRasterPos2i(400, 230);
-        for (const char &letter: "Ship Shootin'!") {
+        for (const char &letter: "Spaceship Shootin'!") {
             glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, letter);
         }
         glColor3f(1, 1, 0);
