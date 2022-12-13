@@ -6,6 +6,7 @@
 #include "baddie.cpp"
 #include <ctime>
 #include <iostream>
+#include <fstream>
 #include <memory>
 #include <vector>
 using namespace std;
@@ -17,17 +18,33 @@ const color brickRed(201/255.0, 20/255.0, 20/255.0);
 const color black(0, 0, 0);
 const color orange(1, 163/255.0, 22/255.0);
 
-enum Status{MENU, PLAY, GETREADY, HIGHSCORES, GAMEOVER};
+enum Status{MENU, PLAY, GETREADY, HIGHSCORES, GAMEOVER, ENTERNAME};
 
 bool clockStarted = false;
+bool newHighScore = false;
 clock_t beginTime, endTime;
 double elapsed;
 
+struct scorePair {
+    string name;
+    double score;
+
+    /*constructors*/
+    scorePair() {
+        name = "";
+        score = 0;
+    }
+    scorePair(string name, double score) {
+        this->name = name;
+        this->score = score;
+    }
+};
 
 Status gameStatus = MENU;
 vector<Rect> bullets, cavBullets;
 vector<Baddie> baddies;
 vector<Ship> theCavalry;
+vector<scorePair> highScores;
 Ship player = Ship(silver, orange, point2D(500,600));
 
 int cavalryCharges = 1;
@@ -40,11 +57,57 @@ string scoreboard = "Remaining Lives: 5";
 string levelMessage = "Level: 0";
 string backupMessage = "Cavalry Charges: 2";
 string scoreMessage;
+string highScoreLine;
+string playerName = "";
+
+void initHighScores() {
+    ifstream fileIn;
+    fileIn.open("../highScores.csv");
+    string header;
+
+    if (fileIn) {
+        getline(fileIn, header);
+    }
+
+    double score;
+    string name, junk;
+
+    while (fileIn && fileIn.peek() != EOF) {
+        getline(fileIn, name, ',');
+        fileIn >> score;
+        getline(fileIn, junk, ',');
+        highScores.push_back(scorePair(name,score));
+    }
+    fileIn.close();
+}
+
+void updateScores() {
+    for (int i = 0; i < highScores.size(); ++i) {
+        if (elapsed > highScores[i].score) {
+            highScores.insert(highScores.begin() + i, scorePair(playerName,elapsed));
+            highScores.pop_back();
+            i = 10;
+        }
+    }
+
+    remove("../highScores.csv");
+    fstream fileOut;
+    fileOut.open("../highScores.csv",ios_base::out);
+
+    fileOut << "name,score,";
+    for (scorePair i: highScores) {
+        fileOut << i.name << "," << i.score << ",";
+    }
+    fileOut.close();
+
+
+}
 
 void init() {
     width = 1000;
     height = 700;
     srand(time(0));
+    initHighScores();
 }
 
 /* Initialize OpenGL Graphics */
@@ -106,9 +169,35 @@ void display() {
         for (const char &letter: "HIGH SCORES") {
             glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, letter);
         }
-
-
     }
+
+    if (gameStatus == HIGHSCORES) {
+        glColor3f(1, 1, 1);
+        glRasterPos2i(300, 100);
+        for (const char &letter: "HIGH SCORES:") {
+            glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, letter);
+        }
+        for (int i = 0; i < highScores.size(); ++i) {
+            glRasterPos2i(300, 130 + i*30);
+            highScoreLine = highScores[i].name + " ...... " + to_string(highScores[i].score);
+            for (const char &letter: highScoreLine) {
+                glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, letter);
+            }
+        }
+        glColor3f(0, 0, 1);
+        glBegin(GL_QUADS);
+        glVertex2i(300, 430);
+        glVertex2i(500, 430);
+        glVertex2i(500, 480);
+        glVertex2i(300, 480);
+        glEnd();
+        glColor3f(0, 0, 0);
+        glRasterPos2i(305, 465);
+        for (const char &letter: "BACK TO MENU") {
+            glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, letter);
+        }
+    }
+
     if (gameStatus == GETREADY) {
         glColor3f(1, 0, 1);
         glRasterPos2i(200, 100);
@@ -162,6 +251,12 @@ void display() {
         if (playerLives == 0) {
             endTime = clock();
             elapsed = double(endTime - beginTime) * 10 / CLOCKS_PER_SEC;
+            for (scorePair n: highScores) {
+                if (elapsed > n.score) {
+                    newHighScore = true;
+                    playerName = "";
+                }
+            }
             scoreMessage = "You survived: " + to_string(elapsed) + " seconds.";
             gameStatus = GAMEOVER;
         }
@@ -170,47 +265,156 @@ void display() {
     if (gameStatus == GAMEOVER) {
 
         glColor3f(1, 0, 1);
-        glRasterPos2i(150, 230);
+        glRasterPos2i(150, 40);
         for (const char &letter: "OH NO! THE ALIENS HAVE BREACHED THE MAIN BASE") {
             glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, letter);
         }
-        glRasterPos2i(280, 260);
+        glRasterPos2i(280, 70);
         for (const char &letter: "DAMAGE ASSESSMENT: CATASTROPHIC!") {
             glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, letter);
         }
-        glRasterPos2i(400, 290);
+        glRasterPos2i(400, 100);
         for (const char &letter: "GAME OVER...") {
             glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, letter);
         }
-        glRasterPos2i(350, 320);
+        glRasterPos2i(350, 130);
         for (const char &letter: scoreMessage) {
             glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, letter);
         }
 
-        glColor3f(0.5, 1, 0.5);
-        glBegin(GL_QUADS);
-        glVertex2i(400, 370);
-        glVertex2i(570, 370);
-        glVertex2i(570, 420);
-        glVertex2i(400, 420);
-        glEnd();
+        if (!newHighScore) {
 
-        glColor3f(1, 0.5, 1);
-        glBegin(GL_QUADS);
-        glVertex2i(400, 440);
-        glVertex2i(570, 440);
-        glVertex2i(570, 490);
-        glVertex2i(400, 490);
-        glEnd();
+            glColor3f(0.5, 1, 0.5);
+            glBegin(GL_QUADS);
+            glVertex2i(200, 230);
+            glVertex2i(370, 230);
+            glVertex2i(370, 280);
+            glVertex2i(200, 280);
+            glEnd();
 
-        glColor3f(0, 0, 0);
-        glRasterPos2i(405, 400);
-        for (const char &letter: "PLAY AGAIN") {
+            glColor3f(1, 0.5, 1);
+            glBegin(GL_QUADS);
+            glVertex2i(200, 300);
+            glVertex2i(370, 300);
+            glVertex2i(370, 350);
+            glVertex2i(200, 350);
+            glEnd();
+
+            glColor3f(0, 0, 0);
+            glRasterPos2i(205, 265);
+            for (const char &letter: "PLAY AGAIN") {
+                glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, letter);
+            }
+            glColor3f(0, 0, 0);
+            glRasterPos2i(205, 335);
+            for (const char &letter: "MAIN MENU") {
+                glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, letter);
+            }
+        }
+
+        if (newHighScore) {
+            glColor3f(0.5, 1, 0.5);
+            glBegin(GL_QUADS);
+            glVertex2i(200, 430);
+            glVertex2i(370, 430);
+            glVertex2i(370, 480);
+            glVertex2i(200, 480);
+            glEnd();
+
+            glColor3f(0, 0, 0);
+            glRasterPos2i(205, 465);
+            for (const char &letter: "ENTER NAME") {
+                glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, letter);
+            }
+        }
+
+        glColor3f(1, 1, 1);
+        glRasterPos2i(600, 200);
+        for (const char &letter: "HIGH SCORES:") {
             glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, letter);
         }
-        glColor3f(0, 0, 0);
-        glRasterPos2i(405, 470);
-        for (const char &letter: "MAIN MENU") {
+        for (int i = 0; i < highScores.size(); ++i) {
+            glRasterPos2i(600, 230 + i*30);
+            highScoreLine = highScores[i].name + " ...... " + to_string(highScores[i].score);
+            for (const char &letter: highScoreLine) {
+                glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, letter);
+            }
+        }
+    }
+
+    if (gameStatus == ENTERNAME) {
+        glColor3f(0.2, 0.2, 0.2);
+        for (int i = 0; i < 3; ++i) {
+            for (int j = 0; j < 9; ++j) {
+                glBegin(GL_QUADS);
+                glVertex2i(50 + (j*100), 100 + (i*70));
+                glVertex2i(50 + (j*100), 160 + (i*70));
+                glVertex2i(140 + (j*100), 160 + (i*70));
+                glVertex2i(140 + (j*100), 100 + (i*70));
+                glEnd();
+            }
+        }
+        glColor3f(1, 1, 1);
+        glRasterPos2i(450, 500);
+        for (const char &letter: playerName) {
+            glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, letter);
+        }
+
+        glColor3f(1, 1, 1);
+        glRasterPos2i(85, 140);
+        glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, 'A');
+        glRasterPos2i(185, 140);
+        glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, 'B');
+        glRasterPos2i(285, 140);
+        glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, 'C');
+        glRasterPos2i(385, 140);
+        glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, 'D');
+        glRasterPos2i(485, 140);
+        glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, 'E');
+        glRasterPos2i(585, 140);
+        glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, 'F');
+        glRasterPos2i(685, 140);
+        glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, 'G');
+        glRasterPos2i(785, 140);
+        glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, 'H');
+        glRasterPos2i(885, 140);
+        glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, 'I');
+        glRasterPos2i(85, 210);
+        glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, 'J');
+        glRasterPos2i(185, 210);
+        glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, 'K');
+        glRasterPos2i(285, 210);
+        glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, 'L');
+        glRasterPos2i(385, 210);
+        glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, 'M');
+        glRasterPos2i(485, 210);
+        glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, 'N');
+        glRasterPos2i(585, 210);
+        glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, 'O');
+        glRasterPos2i(685, 210);
+        glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, 'P');
+        glRasterPos2i(785, 210);
+        glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, 'Q');
+        glRasterPos2i(885, 210);
+        glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, 'R');
+        glRasterPos2i(85, 280);
+        glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, 'S');
+        glRasterPos2i(185, 280);
+        glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, 'T');
+        glRasterPos2i(285, 280);
+        glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, 'U');
+        glRasterPos2i(385, 280);
+        glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, 'V');
+        glRasterPos2i(485, 280);
+        glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, 'W');
+        glRasterPos2i(585, 280);
+        glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, 'X');
+        glRasterPos2i(685, 280);
+        glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, 'Y');
+        glRasterPos2i(785, 280);
+        glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, 'Y');
+        glRasterPos2i(855, 280);
+        for (const char &letter: "ENTER") {
             glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, letter);
         }
 
@@ -292,6 +496,7 @@ void mouse(int button, int state, int x, int y) {
 
     if (gameStatus == MENU && 400 < x && x < 570 && 250 < y && y < 300 && button == GLUT_LEFT_BUTTON && state == GLUT_UP) {
         clockStarted = false;
+        newHighScore = false;
         playerLives = 5;
         level = 0;
         countdown = 5;
@@ -305,7 +510,7 @@ void mouse(int button, int state, int x, int y) {
     if (gameStatus == MENU && 400 < x && x < 570 && 320 < y && y < 370 && button == GLUT_LEFT_BUTTON && state == GLUT_UP) {
         gameStatus = HIGHSCORES;
     }
-    if (gameStatus == GAMEOVER && 400 < x && x < 570 && 370 < y && y < 420 && button == GLUT_LEFT_BUTTON && state == GLUT_UP) {
+    if (gameStatus == GAMEOVER && !newHighScore && 200 < x && x < 370 && 230 < y && y < 280 && button == GLUT_LEFT_BUTTON && state == GLUT_UP) {
         clockStarted = false;
         playerLives = 5;
         level = 0;
@@ -318,8 +523,97 @@ void mouse(int button, int state, int x, int y) {
         bullets.clear();
         gameStatus = GETREADY;
     }
-    if (gameStatus == GAMEOVER && 400 < x && x < 570 && 440 < y && y < 490 && button == GLUT_LEFT_BUTTON && state == GLUT_UP) {
+    if (gameStatus == GAMEOVER && !newHighScore && 200 < x && x < 370 && 300 < y && y < 350 && button == GLUT_LEFT_BUTTON && state == GLUT_UP) {
         gameStatus = MENU;
+    }
+    if (gameStatus == HIGHSCORES && 300 < x && x < 500 && 430 < y && y < 480 && button == GLUT_LEFT_BUTTON && state == GLUT_UP) {
+        gameStatus = MENU;
+    }
+    if (gameStatus == GAMEOVER && newHighScore && 200 < x && x < 370 && 430 < y && y < 480 && button == GLUT_LEFT_BUTTON && state == GLUT_UP) {
+        gameStatus = ENTERNAME;
+    }
+
+    if (gameStatus == ENTERNAME && 50 < x && x < 140 && 100 < y && y < 160 && button == GLUT_LEFT_BUTTON && state == GLUT_UP) {
+        playerName += 'A';
+    }
+    if (gameStatus == ENTERNAME && 150 < x && x < 240 && 100 < y && y < 160 && button == GLUT_LEFT_BUTTON && state == GLUT_UP) {
+        playerName += 'B';
+    }
+    if (gameStatus == ENTERNAME && 250 < x && x < 340 && 100 < y && y < 160 && button == GLUT_LEFT_BUTTON && state == GLUT_UP) {
+        playerName += 'C';
+    }
+    if (gameStatus == ENTERNAME && 350 < x && x < 440 && 100 < y && y < 160 && button == GLUT_LEFT_BUTTON && state == GLUT_UP) {
+        playerName += 'D';
+    }
+    if (gameStatus == ENTERNAME && 450 < x && x < 540 && 100 < y && y < 160 && button == GLUT_LEFT_BUTTON && state == GLUT_UP) {
+        playerName += 'E';
+    }
+    if (gameStatus == ENTERNAME && 550 < x && x < 640 && 100 < y && y < 160 && button == GLUT_LEFT_BUTTON && state == GLUT_UP) {
+        playerName += 'F';
+    }
+    if (gameStatus == ENTERNAME && 650 < x && x < 740 && 100 < y && y < 160 && button == GLUT_LEFT_BUTTON && state == GLUT_UP) {
+        playerName += 'G';
+    }
+    if (gameStatus == ENTERNAME && 750 < x && x < 840 && 100 < y && y < 160 && button == GLUT_LEFT_BUTTON && state == GLUT_UP) {
+        playerName += 'H';
+    }
+    if (gameStatus == ENTERNAME && 850 < x && x < 940 && 100 < y && y < 160 && button == GLUT_LEFT_BUTTON && state == GLUT_UP) {
+        playerName += 'I';
+    }
+    if (gameStatus == ENTERNAME && 50 < x && x < 140 && 170 < y && y < 230 && button == GLUT_LEFT_BUTTON && state == GLUT_UP) {
+        playerName += 'J';
+    }
+    if (gameStatus == ENTERNAME && 150 < x && x < 240 && 170 < y && y < 230 && button == GLUT_LEFT_BUTTON && state == GLUT_UP) {
+        playerName += 'K';
+    }
+    if (gameStatus == ENTERNAME && 250 < x && x < 340 && 170 < y && y < 230 && button == GLUT_LEFT_BUTTON && state == GLUT_UP) {
+        playerName += 'L';
+    }
+    if (gameStatus == ENTERNAME && 350 < x && x < 440 && 170 < y && y < 230 && button == GLUT_LEFT_BUTTON && state == GLUT_UP) {
+        playerName += 'M';
+    }
+    if (gameStatus == ENTERNAME && 450 < x && x < 540 && 170 < y && y < 230 && button == GLUT_LEFT_BUTTON && state == GLUT_UP) {
+        playerName += 'N';
+    }
+    if (gameStatus == ENTERNAME && 550 < x && x < 640 && 170 < y && y < 230 && button == GLUT_LEFT_BUTTON && state == GLUT_UP) {
+        playerName += 'O';
+    }
+    if (gameStatus == ENTERNAME && 650 < x && x < 740 && 170 < y && y < 230 && button == GLUT_LEFT_BUTTON && state == GLUT_UP) {
+        playerName += 'P';
+    }
+    if (gameStatus == ENTERNAME && 750 < x && x < 840 && 170 < y && y < 230 && button == GLUT_LEFT_BUTTON && state == GLUT_UP) {
+        playerName += 'Q';
+    }
+    if (gameStatus == ENTERNAME && 850 < x && x < 940 && 170 < y && y < 230 && button == GLUT_LEFT_BUTTON && state == GLUT_UP) {
+        playerName += 'R';
+    }
+    if (gameStatus == ENTERNAME && 50 < x && x < 140 && 240 < y && y < 300 && button == GLUT_LEFT_BUTTON && state == GLUT_UP) {
+        playerName += 'S';
+    }
+    if (gameStatus == ENTERNAME && 150 < x && x < 240 && 240 < y && y < 300 && button == GLUT_LEFT_BUTTON && state == GLUT_UP) {
+        playerName += 'T';
+    }
+    if (gameStatus == ENTERNAME && 250 < x && x < 340 && 240 < y && y < 300 && button == GLUT_LEFT_BUTTON && state == GLUT_UP) {
+        playerName += 'U';
+    }
+    if (gameStatus == ENTERNAME && 350 < x && x < 440 && 240 < y && y < 300 && button == GLUT_LEFT_BUTTON && state == GLUT_UP) {
+        playerName += 'V';
+    }
+    if (gameStatus == ENTERNAME && 450 < x && x < 540 && 240 < y && y < 300 && button == GLUT_LEFT_BUTTON && state == GLUT_UP) {
+        playerName += 'W';
+    }
+    if (gameStatus == ENTERNAME && 550 < x && x < 640 && 240 < y && y < 300 && button == GLUT_LEFT_BUTTON && state == GLUT_UP) {
+        playerName += 'X';
+    }
+    if (gameStatus == ENTERNAME && 650 < x && x < 740 && 240 < y && y < 300 && button == GLUT_LEFT_BUTTON && state == GLUT_UP) {
+        playerName += 'Y';
+    }
+    if (gameStatus == ENTERNAME && 750 < x && x < 840 && 240 < y && y < 300 && button == GLUT_LEFT_BUTTON && state == GLUT_UP) {
+        playerName += 'Z';
+    }
+    if (gameStatus == ENTERNAME && playerName != "" && 850 < x && x < 940 && 240 < y && y < 300 && button == GLUT_LEFT_BUTTON && state == GLUT_UP) {
+        updateScores();
+        gameStatus = HIGHSCORES;
     }
 
     glutPostRedisplay();
