@@ -23,8 +23,5 @@ Instructions:
 8) If you set a high score you will be prompted to enter your name with the on-screen keyboard.
 
 I have only run this game on MacOS.
-All code is written entirely by me with the exception of some code from class which is cited in the comments
-where applicable.
 
-
-Grade I think I deserve: 180/190
+All code is written entirely by me with any exceptions being cited in the comments.
