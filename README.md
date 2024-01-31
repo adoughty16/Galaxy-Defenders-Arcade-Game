@@ -1,10 +1,6 @@
 # Final-Project-asdought
 # "SpaceShip Shootin'" - By Abe Doughty
 
-NOTICE: THE FRAMERATE ON MY VIDEO DEMONSTRATION IS VERY BAD FOR SOME REASON.
-THE GAME DISPLAY HAS A MUCH HIGHER REFRESH RATE WHEN YOU ARE ACTUALLY PLAYING IT.
-
-
 This is a spaceship shooter game in the style of 80's arcade games.
 You are the captain of a starship tasked with defending a space station on
 the edge of explored space. Who's out there with you? Aliens. That's who.
