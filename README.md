@@ -1,4 +1,3 @@
-# Final-Project-asdought
 # "SpaceShip Shootin'" - By Abe Doughty
 
 This is a spaceship shooter game in the style of 80's arcade games.
