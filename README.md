@@ -21,6 +21,4 @@ Instructions:
 7) After five lives have been lost, game over!
 8) If you set a high score you will be prompted to enter your name with the on-screen keyboard.
 
-I have only run this game on MacOS.
-
 All code is written entirely by me with any exceptions being cited in the comments.
