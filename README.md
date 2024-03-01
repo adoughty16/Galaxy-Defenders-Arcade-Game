@@ -1,4 +1,4 @@
-# "SpaceShip Shootin'" - By Abe Doughty
+# "Galaxy Defenders!" - By Abe Doughty
 
 This is a spaceship shooter game in the style of 80's arcade games.
 You are the captain of a starship tasked with defending a space station on
